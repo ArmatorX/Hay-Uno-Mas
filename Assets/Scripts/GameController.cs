@@ -1,6 +1,8 @@
-﻿using System.Collections;
+﻿using Assets.Scripts;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
 public class GameController : MonoBehaviour
 {
@@ -38,8 +40,9 @@ public class GameController : MonoBehaviour
 
     void StartLevel()
     {
-        if (Level > SpriteList.Count) 
-        {
+        if (Level > 4)
+        { 
+            StartCoroutine(Upload());
             Debug.Log("El tiempo total de juego fue " + Time.time + " s.");
             Debug.Log("El paciente cometió " + Errors + " errores.");
         } else
@@ -150,5 +153,31 @@ public class GameController : MonoBehaviour
     public void IncrementErrors()
     {
         Errors++;
+    }
+
+    public IEnumerator Upload()
+    {
+        yield return new WaitForEndOfFrame();
+
+        Juego juego = new Juego(Time.time, Errors, "HayUnoMas");
+        string postData = JsonUtility.ToJson(juego);
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(postData);
+
+        Dictionary<string, string> parameters = new Dictionary<string, string>();
+        parameters.Add("Content-Type", "application/json");
+        parameters.Add("Content-Length", postData.Length.ToString());
+
+        WWW www = new WWW("http://localhost:8080/juegos", bytes, parameters);
+
+        yield return www;
+
+        if (www.error != null)
+        {
+            Debug.Log(www.error);
+        }
+        else
+        {
+            Debug.Log("Form upload complete!");
+        }
     }
 }
